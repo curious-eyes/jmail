@@ -1,0 +1,11 @@
+From: Gopher <from@example.com>
+Subject: =?ISO-2022-JP?Q??=
+ =?ISO-2022-JP?Q?=1B$B!Z%F%9%H4D6-![%5%$%H99=3F7$,40N;$7$^$7$=3F=1B(B?=
+To: Another Gopher <to@example.com>
+Date: Wed, 16 Sep 2015 05:32:04 +0900
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+MIME-Version: 1.0
+
+Message body

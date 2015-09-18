@@ -1,0 +1,11 @@
+From: Gopher <from@example.com>
+Subject: =?UTF-8?Q?=E3=80=90=E3=83=86=E3=82=B9=E3=83=88=E7=92=B0=E5=A2=83=E3=80=91?=
+ =?UTF-8?Q?=E3=82=B5=E3=82=A4=E3=83=88=E6=9B=B4=E6=96=B0=E3=81=8C=E5=AE=8C=E4=BA=86=E3=81=97=E3=81=BE=E3=81=97=E3=81=9F?=
+To: Another Gopher <to@example.com>
+Date: Wed, 16 Sep 2015 05:32:06 +0900
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+MIME-Version: 1.0
+
+Message body
