@@ -11,41 +11,6 @@ func ExampleReadMessage() {
 	msg := `Date: Wed, 16 Sep 2015 05:32:06 +0900
 From: Gopher <from@example.com>
 To: Another Gopher <to@example.com>
-Subject: Gophers at Gophercon
-
-Message body
-`
-
-	r := strings.NewReader(msg)
-	m, err := mail.ReadMessage(r)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	header := m.Header
-	fmt.Println("Date:", header.Get("Date"))
-	fmt.Println("From:", header.Get("From"))
-	fmt.Println("To:", header.Get("To"))
-
-	fmt.Println("Subject:", m.DecSubject())
-	body, err := m.DecBody()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("%s", body)
-
-	// Output:
-	// Date: Wed, 16 Sep 2015 05:32:06 +0900
-	// From: Gopher <from@example.com>
-	// To: Another Gopher <to@example.com>
-	// Subject: Gophers at Gophercon
-	// Message body
-}
-
-func ExampleUTF8Q() {
-	msg := `Date: Wed, 16 Sep 2015 05:32:06 +0900
-From: Gopher <from@example.com>
-To: Another Gopher <to@example.com>
 Subject: =?UTF-8?Q?=E7=94=9F=E6=B4=BB=E3=81=AE=E3=81=BB=E3=81=A8=E3=82=93=E3=81=A9=E3=82=92?=
  =?UTF-8?Q?=E5=9C=B0=E4=B8=AD=E3=81=A7=E9=81=8E=E3=81=94=E3=81=99?=
 Content-Type: text/plain; charset=UTF-8
