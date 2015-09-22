@@ -54,52 +54,51 @@ func ReadMessage(r io.Reader) (msg *Jmessage, err error) {
 func (msg Jmessage) DecSubject() string {
 	header := msg.Header
 	splitsubj := strings.Fields(header.Get("Subject"))
-	var subj []string
-	for _, parts := range splitsubj {
-		if !strings.HasPrefix(parts, "=?") {
-			subj = append(subj, parts+" ")
-			continue
-		}
-		for true {
-			if len(parts) > len(SUBJ_PREFIX_ISO2022JP_B) && strings.HasPrefix(strings.ToLower(parts[0:len(SUBJ_PREFIX_ISO2022JP_B)]), SUBJ_PREFIX_ISO2022JP_B) {
-				beforeDecode := parts[len(SUBJ_PREFIX_ISO2022JP_B):strings.LastIndex(parts, "?=")]
-				afterDecode := base64.NewDecoder(base64.StdEncoding, strings.NewReader(beforeDecode))
-				subj_bytes, _ := ioutil.ReadAll(transform.NewReader(afterDecode, japanese.ISO2022JP.NewDecoder()))
-				subj = append(subj, bytes.NewBuffer(subj_bytes).String())
-				break
+	var bufSubj bytes.Buffer
+	for seq, parts := range splitsubj {
+		switch {
+		case !strings.HasPrefix(parts, "=?"):
+			// エンコードなし
+			if seq > 0 {
+				// 先頭以外はSpaceで区切りなおし
+				bufSubj.WriteByte(' ')
 			}
+			bufSubj.WriteString(parts)
 
-			if len(parts) > len(SUBJ_PREFIX_ISO2022JP_Q) && strings.HasPrefix(strings.ToLower(parts[0:len(SUBJ_PREFIX_ISO2022JP_Q)]), SUBJ_PREFIX_ISO2022JP_Q) {
-				beforeDecode := parts[len(SUBJ_PREFIX_ISO2022JP_Q):strings.LastIndex(parts, "?=")]
-				afterDecode := quotedprintable.NewReader(strings.NewReader(beforeDecode))
-				subj_bytes, _ := ioutil.ReadAll(transform.NewReader(afterDecode, japanese.ISO2022JP.NewDecoder()))
-				subj = append(subj, bytes.NewBuffer(subj_bytes).String())
-				break
-			}
+		case len(parts) > len(SUBJ_PREFIX_ISO2022JP_B) && strings.HasPrefix(strings.ToLower(parts[0:len(SUBJ_PREFIX_ISO2022JP_B)]), SUBJ_PREFIX_ISO2022JP_B):
+			// iso-2022-jp / base64
+			beforeDecode := parts[len(SUBJ_PREFIX_ISO2022JP_B):strings.LastIndex(parts, "?=")]
+			afterDecode := base64.NewDecoder(base64.StdEncoding, bytes.NewBufferString(beforeDecode))
+			subj_bytes, _ := ioutil.ReadAll(transform.NewReader(afterDecode, japanese.ISO2022JP.NewDecoder()))
+			bufSubj.Write(subj_bytes)
 
-			if len(parts) > len(SUBJ_PREFIX_UTF8_B) && strings.HasPrefix(strings.ToLower(parts[0:len(SUBJ_PREFIX_UTF8_B)]), SUBJ_PREFIX_UTF8_B) {
-				beforeDecode := parts[len(SUBJ_PREFIX_UTF8_B):strings.LastIndex(parts, "?=")]
-				afterDecode, _ := base64.StdEncoding.DecodeString(beforeDecode)
-				subj = append(subj, bytes.NewBuffer(afterDecode).String())
-				break
-			}
+		case len(parts) > len(SUBJ_PREFIX_ISO2022JP_Q) && strings.HasPrefix(strings.ToLower(parts[0:len(SUBJ_PREFIX_ISO2022JP_Q)]), SUBJ_PREFIX_ISO2022JP_Q):
+			// iso-2022-jp / quoted-printable
+			beforeDecode := parts[len(SUBJ_PREFIX_ISO2022JP_Q):strings.LastIndex(parts, "?=")]
+			afterDecode := quotedprintable.NewReader(bytes.NewBufferString(beforeDecode))
+			subj_bytes, _ := ioutil.ReadAll(transform.NewReader(afterDecode, japanese.ISO2022JP.NewDecoder()))
+			bufSubj.Write(subj_bytes)
 
-			if len(parts) > len(SUBJ_PREFIX_UTF8_Q) && strings.HasPrefix(strings.ToLower(parts[0:len(SUBJ_PREFIX_UTF8_Q)]), SUBJ_PREFIX_UTF8_Q) {
-				beforeDecode := parts[len(SUBJ_PREFIX_UTF8_Q):strings.LastIndex(parts, "?=")]
-				afterDecode := quotedprintable.NewReader(strings.NewReader(beforeDecode))
-				subj_bytes, _ := ioutil.ReadAll(afterDecode)
-				subj = append(subj, bytes.NewBuffer(subj_bytes).String())
-				break
-			}
+		case len(parts) > len(SUBJ_PREFIX_UTF8_B) && strings.HasPrefix(strings.ToLower(parts[0:len(SUBJ_PREFIX_UTF8_B)]), SUBJ_PREFIX_UTF8_B):
+			// utf-8 / base64
+			beforeDecode := parts[len(SUBJ_PREFIX_UTF8_B):strings.LastIndex(parts, "?=")]
+			subj_bytes, _ := base64.StdEncoding.DecodeString(beforeDecode)
+			bufSubj.Write(subj_bytes)
 
-			break
+		case len(parts) > len(SUBJ_PREFIX_UTF8_Q) && strings.HasPrefix(strings.ToLower(parts[0:len(SUBJ_PREFIX_UTF8_Q)]), SUBJ_PREFIX_UTF8_Q):
+			// utf-8 / quoted-printable
+			beforeDecode := parts[len(SUBJ_PREFIX_UTF8_Q):strings.LastIndex(parts, "?=")]
+			afterDecode := quotedprintable.NewReader(bytes.NewBufferString(beforeDecode))
+			subj_bytes, _ := ioutil.ReadAll(afterDecode)
+			bufSubj.Write(subj_bytes)
 		}
 	}
-	return strings.Trim(strings.Join(subj, ""), " ")
+	return bufSubj.String()
 }
 
 func (msg Jmessage) DecBody() (mailbody []byte, err error) {
-	contentType := msg.Header.Get("Content-Type"); if contentType == "" {
+	contentType := msg.Header.Get("Content-Type")
+	if contentType == "" {
 		return readPlainText(map[string][]string(msg.Header), msg.Body)
 	}
 	mediaType, params, err := mime.ParseMediaType(contentType)
